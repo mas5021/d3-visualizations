@@ -1,0 +1,11 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+svg {
+    display: block;
+    margin: auto;
+}
+.legend {
+    font-size: 14px;
+}
