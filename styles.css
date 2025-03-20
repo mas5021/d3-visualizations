@@ -1,33 +1,47 @@
+/* Overall Page Styles */
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background-color: #f8f9fa;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
 }
 
 h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
+  font-size: 28px;
+  margin: 20px 0 10px;
 }
 
 h2 {
-    font-size: 18px;
-    margin-top: 30px;
+  font-size: 20px;
+  margin: 30px 0 10px;
 }
 
+/* Container for each chart */
 .chart-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
+/* SVG styling for both charts */
 svg {
-    display: block;
-    background-color: white;
-    border: 1px solid #ccc;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  display: block;
 }
 
-#pie-chart, #area-chart {
-    border: 2px solid #000;
-    padding: 10px;
+/* Pie/Donut Chart specific styles */
+.legend {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.arc-label {
+  fill: #fff;
+  font-size: 12px;
+  text-anchor: middle;
+  alignment-baseline: middle;
 }
