@@ -1,51 +1,53 @@
 const pieWidth = 500,
       pieHeight = 500,
       pieRadius = Math.min(pieWidth, pieHeight) / 2,
-      innerRadius = pieRadius * 0.5; // Inner radius for donut effect
+      innerRadius = pieRadius * 0.5; // For donut effect
 
 // Append group to the SVG
 const pieSvg = d3.select("#pie-chart")
   .append("g")
   .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
 
-// ✅ Change dataset variable name to avoid conflicts
-const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/026c349c96a9cdc0c9542ff31643432a119b2bbd/world_population.csv";
+// Use a unique dataset variable name for the pie chart
+const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/YOUR_GIST_ID/raw/YOUR_COMMIT_ID/world_population_extended.csv";
 
 d3.csv(pieDatasetUrl).then(data => {
   console.log("✅ Pie Chart Data Loaded:", data);
 
-  // ✅ Ensure data is formatted correctly
+  // Clean and format data
   data.forEach(d => {
     d.Year = d.Year.trim();
     d.Population = +d.Population;
   });
+  
+  // Filter for 2030 data
+  const population2030 = data.filter(d => d.Year === "2030");
 
-  // ✅ Filter for 2020
-  const population2020 = data.filter(d => d.Year === "2020");
-
-  // ✅ Check if data exists
-  if (population2020.length === 0) {
-    console.error("❌ No 2020 data found in the CSV.");
+  if (population2030.length === 0) {
+    console.error("❌ No data found for 2030.");
     return;
   }
 
-  // ✅ Create Pie Layout
+  // Create Pie Layout
   const pie = d3.pie().value(d => d.Population);
-  const pieData = pie(population2020);
-  console.log("✅ Pie Data Processed:", pieData); // Debugging
+  const pieData = pie(population2030);
+  console.log("✅ Pie Data Processed:", pieData);
 
-  // ✅ Define Arc Generator (Donut)
+  // Define Arc Generator for donut chart
   const arc = d3.arc()
-    .innerRadius(innerRadius) // Donut hole size
+    .innerRadius(innerRadius)
     .outerRadius(pieRadius);
 
-  // ✅ Define Color Scale
+  // Define Color Scale
   const color = d3.scaleOrdinal(d3.schemeCategory10);
 
-  // ✅ Clear old elements before rendering
+  // Clear previous elements
   pieSvg.selectAll("*").remove();
 
-  // ✅ Draw the arcs (Pie Slices)
+  // Create tooltip selection
+  const tooltip = d3.select("#tooltip");
+
+  // Draw pie slices with interactions
   pieSvg.selectAll("path")
     .data(pieData)
     .enter()
@@ -53,9 +55,26 @@ d3.csv(pieDatasetUrl).then(data => {
     .attr("d", arc)
     .attr("fill", d => color(d.data.Region))
     .attr("stroke", "#fff")
-    .style("stroke-width", "2px");
+    .style("stroke-width", "2px")
+    .on("mouseover", (event, d) => {
+      d3.select(event.currentTarget).transition().duration(200)
+        .attr("transform", "scale(1.05)");
+      tooltip.transition().duration(200).style("opacity", 0.9);
+      tooltip.html(`<strong>Region:</strong> ${d.data.Region}<br><strong>Population:</strong> ${d.data.Population}`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mousemove", (event) => {
+      tooltip.style("left", (event.pageX + 10) + "px")
+             .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", (event) => {
+      d3.select(event.currentTarget).transition().duration(200)
+        .attr("transform", "scale(1)");
+      tooltip.transition().duration(200).style("opacity", 0);
+    });
 
-  // ✅ Add labels on each slice
+  // Add labels on each slice
   pieSvg.selectAll(".arc-label")
     .data(pieData)
     .enter()
@@ -68,11 +87,12 @@ d3.csv(pieDatasetUrl).then(data => {
     .style("font-size", "12px")
     .text(d => d.data.Region);
 
-  // ✅ Add a Legend
+  // Add legend
   const legend = pieSvg.selectAll(".legend")
-    .data(population2020)
+    .data(population2030)
     .enter()
     .append("g")
+    .attr("class", "legend")
     .attr("transform", (d, i) => `translate(-120, ${i * 20 - 100})`);
 
   legend.append("rect")

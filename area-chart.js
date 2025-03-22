@@ -6,62 +6,65 @@ const areaSvg = d3.select("#area-chart")
   .append("g")
   .attr("transform", `translate(${areaMargin.left},${areaMargin.top})`);
 
-// ✅ Use a unique dataset URL variable name
-const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/026c349c96a9cdc0c9542ff31643432a119b2bbd/world_population.csv";
+// Use a unique dataset variable name for the area chart
+const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/YOUR_GIST_ID/raw/YOUR_COMMIT_ID/world_population_extended.csv";
 
 d3.csv(areaDatasetUrl).then(data => {
   console.log("✅ Area Chart Data Loaded:", data);
 
-  // ✅ Convert data types
+  // Format data: convert Year and Population to numbers
   data.forEach(d => {
-    d.Year = +d.Year.trim(); // Ensure Year is a number
+    d.Year = +d.Year.trim();
     d.Population = +d.Population;
   });
 
-  // ✅ Group data by Year
+  // Group data by Year
   const nestedData = d3.groups(data, d => d.Year)
     .map(([year, values]) => {
       let entry = { Year: +year };
       values.forEach(d => {
-        if (d.Region && d.Population) {  // Ensure Region and Population exist
+        if (d.Region && d.Population) {
           entry[d.Region] = d.Population;
         }
       });
       return entry;
     });
-
   console.log("✅ Nested Data:", nestedData);
 
-  // ✅ Extract unique regions
-  const keys = Object.keys(nestedData[0]).filter(d => d !== "Year");
+  // Extract unique regions (keys) except Year
+  const keys = Object.keys(nestedData[0]).filter(k => k !== "Year");
 
-  // ✅ X scale: years
+  // X scale: for years
   const x = d3.scaleLinear()
-    .domain(d3.extent(nestedData, d => d.Year)) // [2000, 2030]
+    .domain(d3.extent(nestedData, d => d.Year))
     .range([0, areaWidth - areaMargin.left - areaMargin.right]);
 
-  // ✅ Y scale: sum of all regions
+  // Y scale: for total population
   const y = d3.scaleLinear()
     .domain([0, d3.max(nestedData, d => d3.sum(keys, key => d[key]))])
     .range([areaHeight - areaMargin.top - areaMargin.bottom, 0]);
 
-  // ✅ Stack data by region
+  // Stack the data by region
   const stack = d3.stack().keys(keys);
   const stackedData = stack(nestedData);
+  console.log("✅ Stacked Data:", stackedData);
 
-  // ✅ Define Area Generator
+  // Area generator for the stacked chart
   const area = d3.area()
     .x(d => x(d.data.Year))
     .y0(d => y(d[0]))
     .y1(d => y(d[1]));
 
-  // ✅ Define Color Scale
+  // Color scale for regions
   const color = d3.scaleOrdinal(d3.schemeCategory10).domain(keys);
 
-  // ✅ Clear previous elements
+  // Create tooltip for the area chart
+  const tooltip = d3.select("#tooltip");
+
+  // Clear previous elements
   areaSvg.selectAll("*").remove();
 
-  // ✅ Append stacked areas
+  // Draw each stacked area with interaction
   areaSvg.selectAll(".area")
     .data(stackedData)
     .enter()
@@ -71,22 +74,40 @@ d3.csv(areaDatasetUrl).then(data => {
     .attr("opacity", 0.8)
     .attr("stroke", "#000")
     .attr("stroke-width", 1)
-    .attr("d", area);
+    .attr("d", area)
+    .on("mouseover", (event, d) => {
+      d3.select(event.currentTarget).transition().duration(200)
+        .attr("opacity", 1);
+      tooltip.transition().duration(200).style("opacity", 0.9);
+      tooltip.html(`<strong>Region:</strong> ${d.key}`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mousemove", (event) => {
+      tooltip.style("left", (event.pageX + 10) + "px")
+             .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", (event, d) => {
+      d3.select(event.currentTarget).transition().duration(200)
+        .attr("opacity", 0.8);
+      tooltip.transition().duration(200).style("opacity", 0);
+    });
 
-  // ✅ X Axis
+  // X Axis
   areaSvg.append("g")
     .attr("transform", `translate(0, ${areaHeight - areaMargin.top - areaMargin.bottom})`)
-    .call(d3.axisBottom(x).tickFormat(d3.format("d"))); // Format as integer years
+    .call(d3.axisBottom(x).tickFormat(d3.format("d")));
 
-  // ✅ Y Axis
+  // Y Axis
   areaSvg.append("g")
     .call(d3.axisLeft(y));
 
-  // ✅ Add Legend
+  // Legend for the area chart
   const legend = areaSvg.selectAll(".legend")
     .data(keys)
     .enter()
     .append("g")
+    .attr("class", "legend")
     .attr("transform", (d, i) => `translate(${areaWidth - 200}, ${i * 20})`);
 
   legend.append("rect")

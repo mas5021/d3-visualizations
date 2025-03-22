@@ -1,4 +1,4 @@
-/* Overall Page Styles */
+/* Overall page styling */
 body {
   font-family: Arial, sans-serif;
   text-align: center;
@@ -17,7 +17,7 @@ h2 {
   margin: 30px 0 10px;
 }
 
-/* Container for each chart */
+/* Chart container styling */
 .chart-container {
   display: flex;
   justify-content: center;
@@ -25,23 +25,39 @@ h2 {
   margin-bottom: 20px;
 }
 
-/* SVG styling for both charts */
+/* SVG styling */
 svg {
   background-color: #fff;
   border: 1px solid #ccc;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  display: block;
 }
 
-/* Pie/Donut Chart specific styles */
-.legend {
-  font-size: 14px;
-  font-weight: bold;
+/* Tooltip styling */
+.tooltip {
+  position: absolute;
+  text-align: left;
+  width: auto;
+  height: auto;
+  padding: 8px;
+  font: 12px sans-serif;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
 }
 
+/* Pie chart label styling */
 .arc-label {
   fill: #fff;
   font-size: 12px;
   text-anchor: middle;
   alignment-baseline: middle;
+}
+
+/* Legend styling */
+.legend {
+  font-size: 14px;
+  font-weight: bold;
 }
