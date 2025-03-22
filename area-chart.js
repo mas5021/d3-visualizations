@@ -1,3 +1,4 @@
+// Dimensions for the stacked area chart
 const areaWidth = 800,
       areaHeight = 500,
       areaMargin = { top: 20, right: 50, bottom: 50, left: 80 };
@@ -6,80 +7,115 @@ const areaSvg = d3.select("#area-chart")
   .append("g")
   .attr("transform", `translate(${areaMargin.left},${areaMargin.top})`);
 
-// Use a unique dataset variable name for the area chart
-const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/YOUR_GIST_ID/raw/YOUR_COMMIT_ID/world_population_extended.csv";
+// Replace with your raw GitHub Gist link OR local file path
+const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/026c349c96a9cdc0c9542ff31643432a119b2bbd/world_population.csv";
 
-d3.csv(areaDatasetUrl).then(data => {
-  console.log("✅ Area Chart Data Loaded:", data);
+// Years we want to visualize (must match CSV column headers exactly)
+const years = ["1970 Population","1980 Population","1990 Population","2000 Population","2010 Population","2015 Population","2020 Population","2022 Population"];
 
-  // Format data: convert Year and Population to numbers
-  data.forEach(d => {
-    d.Year = +d.Year.trim();
-    d.Population = +d.Population;
+d3.csv(areaDatasetUrl).then(rawData => {
+  console.log("✅ Area Chart Data Loaded:", rawData);
+
+  // 1) Group by Continent
+  const grouped = d3.groups(rawData, d => d.Continent.trim());
+  // 2) For each continent, sum the population for each year
+  //    Then we'll build a structure so we can stack by continent across these years.
+
+  // Make an object: { Year: 1970, Africa: sum, Asia: sum, Europe: sum, ... }
+  // for each year in years[].
+  const yearMap = {}; 
+  years.forEach(y => {
+    const yearKey = y.replace(" Population", ""); // e.g. "1970"
+    yearMap[yearKey] = {}; // Will hold { Africa: sum, Asia: sum, ... }
   });
 
-  // Group data by Year
-  const nestedData = d3.groups(data, d => d.Year)
-    .map(([year, values]) => {
-      let entry = { Year: +year };
-      values.forEach(d => {
-        if (d.Region && d.Population) {
-          entry[d.Region] = d.Population;
-        }
-      });
-      return entry;
+  // Initialize each continent to 0 for each year
+  // e.g. yearMap["1970"] = { "Africa": 0, "Asia": 0, ... }
+  const continents = Array.from(new Set(rawData.map(d => d.Continent.trim())));
+  years.forEach(y => {
+    const yearKey = y.replace(" Population", "");
+    continents.forEach(cont => {
+      yearMap[yearKey][cont] = 0;
     });
-  console.log("✅ Nested Data:", nestedData);
+  });
 
-  // Extract unique regions (keys) except Year
-  const keys = Object.keys(nestedData[0]).filter(k => k !== "Year");
+  // Sum population for each continent, each year
+  rawData.forEach(d => {
+    const c = d.Continent.trim();
+    years.forEach(y => {
+      const yearKey = y.replace(" Population", ""); // "1970"
+      const val = +d[y]; // e.g. d["1970 Population"]
+      if (!isNaN(val)) {
+        yearMap[yearKey][c] += val;
+      }
+    });
+  });
 
-  // X scale: for years
+  // Convert yearMap to an array of objects: [ {Year: 1970, Africa: X, Asia: Y, ...}, {Year: 1980, ...}, ... ]
+  const finalData = [];
+  Object.keys(yearMap).forEach(yearStr => {
+    const rowObj = { Year: +yearStr };
+    continents.forEach(cont => {
+      rowObj[cont] = yearMap[yearStr][cont];
+    });
+    finalData.push(rowObj);
+  });
+
+  // Sort finalData by year numeric
+  finalData.sort((a, b) => a.Year - b.Year);
+
+  console.log("✅ Processed Data for Stacked Area:", finalData);
+
+  // X scale: year
   const x = d3.scaleLinear()
-    .domain(d3.extent(nestedData, d => d.Year))
+    .domain(d3.extent(finalData, d => d.Year)) // e.g. [1970, 2022]
     .range([0, areaWidth - areaMargin.left - areaMargin.right]);
 
-  // Y scale: for total population
+  // Y scale: sum of all continents in a given year
   const y = d3.scaleLinear()
-    .domain([0, d3.max(nestedData, d => d3.sum(keys, key => d[key]))])
+    .domain([0, d3.max(finalData, d => {
+      // sum across all continents
+      return d3.sum(continents, c => d[c]);
+    })])
     .range([areaHeight - areaMargin.top - areaMargin.bottom, 0]);
 
-  // Stack the data by region
-  const stack = d3.stack().keys(keys);
-  const stackedData = stack(nestedData);
+  // Create a stack generator
+  const stack = d3.stack().keys(continents);
+  const stackedData = stack(finalData);
   console.log("✅ Stacked Data:", stackedData);
 
-  // Area generator for the stacked chart
+  // Area generator for stacked chart
   const area = d3.area()
     .x(d => x(d.data.Year))
     .y0(d => y(d[0]))
     .y1(d => y(d[1]));
 
-  // Color scale for regions
-  const color = d3.scaleOrdinal(d3.schemeCategory10).domain(keys);
+  // Define color scale for continents
+  const color = d3.scaleOrdinal(d3.schemeCategory10).domain(continents);
 
-  // Create tooltip for the area chart
+  // Create a tooltip
   const tooltip = d3.select("#tooltip");
 
   // Clear previous elements
   areaSvg.selectAll("*").remove();
 
-  // Draw each stacked area with interaction
-  areaSvg.selectAll(".area")
+  // Draw stacked areas
+  areaSvg.selectAll(".layer")
     .data(stackedData)
     .enter()
     .append("path")
-    .attr("class", "area")
+    .attr("class", "layer")
     .attr("fill", d => color(d.key))
     .attr("opacity", 0.8)
     .attr("stroke", "#000")
     .attr("stroke-width", 1)
     .attr("d", area)
     .on("mouseover", (event, d) => {
+      // highlight area
       d3.select(event.currentTarget).transition().duration(200)
         .attr("opacity", 1);
       tooltip.transition().duration(200).style("opacity", 0.9);
-      tooltip.html(`<strong>Region:</strong> ${d.key}`)
+      tooltip.html(`<strong>Continent:</strong> ${d.key}`)
         .style("left", (event.pageX + 10) + "px")
         .style("top", (event.pageY - 28) + "px");
     })
@@ -96,15 +132,15 @@ d3.csv(areaDatasetUrl).then(data => {
   // X Axis
   areaSvg.append("g")
     .attr("transform", `translate(0, ${areaHeight - areaMargin.top - areaMargin.bottom})`)
-    .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+    .call(d3.axisBottom(x).tickFormat(d3.format("d"))); // show e.g. 1970, 1980, etc.
 
   // Y Axis
   areaSvg.append("g")
     .call(d3.axisLeft(y));
 
-  // Legend for the area chart
+  // Legend
   const legend = areaSvg.selectAll(".legend")
-    .data(keys)
+    .data(continents)
     .enter()
     .append("g")
     .attr("class", "legend")
