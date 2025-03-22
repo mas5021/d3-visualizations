@@ -19,10 +19,12 @@ h2 {
 
 /* Chart container styling */
 .chart-container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 20px auto; 
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
 }
 
 /* SVG styling */
@@ -48,7 +50,7 @@ svg {
   z-index: 10;
 }
 
-/* Pie chart label styling */
+/* Donut chart label styling */
 .arc-label {
   fill: #fff;
   font-size: 12px;
@@ -56,8 +58,10 @@ svg {
   alignment-baseline: middle;
 }
 
-/* Legend styling */
-.legend {
-  font-size: 14px;
-  font-weight: bold;
+/* Legend bounding box */
+.legend-bg {
+  fill: #f0f0f0;
+  stroke: #ccc;
+  rx: 8; /* rounded corners */
+  ry: 8;
 }

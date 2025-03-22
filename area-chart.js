@@ -1,15 +1,15 @@
-const areaWidth = 800,
-      areaHeight = 500,
+const areaWidth = 900,
+      areaHeight = 550,
       areaMargin = { top: 20, right: 50, bottom: 50, left: 80 };
 
 const areaSvg = d3.select("#area-chart")
   .append("g")
-  .attr("transform", `translate(${areaMargin.left}, ${areaMargin.top})`);
+  .attr("transform", `translate(${areaMargin.left},${areaMargin.top})`);
 
-// Replace with your raw GitHub Gist link or local file path
+// Replace with your dataset link
 const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/06a25453f364af0081807aa5ce006a8287d49c37/world_population.csv";
 
-// Years to visualize
+// Years we want to visualize
 const years = [
   "1970 Population",
   "1980 Population",
@@ -25,12 +25,7 @@ d3.csv(areaDatasetUrl).then(rawData => {
   // 1) Identify unique continents
   const continents = Array.from(new Set(rawData.map(d => d.Continent.trim())));
 
-  // 2) Create a structure like:
-  // finalData = [
-  //   { Year: 1970, Africa: X, Asia: Y, Europe: Z, ... },
-  //   { Year: 1980, Africa: X, Asia: Y, Europe: Z, ... },
-  //   ...
-  // ]
+  // 2) Create data structure for stacked area
   const yearMap = {};
   years.forEach(y => {
     const yearKey = y.replace(" Population", "");
@@ -59,15 +54,14 @@ d3.csv(areaDatasetUrl).then(rawData => {
     });
     finalData.push(rowObj);
   });
-  // Sort by Year
   finalData.sort((a, b) => a.Year - b.Year);
 
-  // 3) X scale: force from 1970 to 2022
+  // 3) X scale from 1970 to 2022
   const x = d3.scaleLinear()
-    .domain([1970, 2022])  // Start at 1970, end at 2022 exactly
+    .domain([1970, 2022])
     .range([0, areaWidth - areaMargin.left - areaMargin.right]);
 
-  // 4) Y scale: start at 0
+  // 4) Y scale from 0 to max sum of all continents
   const y = d3.scaleLinear()
     .domain([
       0,
@@ -75,7 +69,7 @@ d3.csv(areaDatasetUrl).then(rawData => {
     ])
     .range([areaHeight - areaMargin.top - areaMargin.bottom, 0]);
 
-  // 5) Stack data by continent
+  // 5) Stack the data
   const stack = d3.stack().keys(continents);
   const stackedData = stack(finalData);
 
@@ -85,10 +79,10 @@ d3.csv(areaDatasetUrl).then(rawData => {
     .y0(d => y(d[0]))
     .y1(d => y(d[1]));
 
-  // 7) Use a more appealing color palette
+  // 7) Different color scheme
   const color = d3.scaleOrdinal()
     .domain(continents)
-    .range(d3.schemeTableau10);
+    .range(d3.schemeSet3);
 
   // 8) Shared tooltip
   const tooltip = d3.select("#tooltip");
@@ -107,14 +101,21 @@ d3.csv(areaDatasetUrl).then(rawData => {
     .attr("stroke", "#000")
     .attr("stroke-width", 1)
     .attr("d", area)
-    // Hover interactions
+    // Hover
     .on("mouseover", (event, d) => {
       d3.select(event.currentTarget).transition().duration(200)
         .attr("opacity", 1);
+
+      // Additional info: total population from 1970–2022 for this continent
+      const totalPop = d3.sum(finalData, row => row[d.key]);
+
       tooltip.transition().duration(200).style("opacity", 0.9);
-      tooltip.html(`<strong>Continent:</strong> ${d.key}`)
-        .style("left", (event.pageX + 10) + "px")
-        .style("top", (event.pageY - 28) + "px");
+      tooltip.html(`
+        <strong>Continent:</strong> ${d.key}<br/>
+        <strong>Population (1970–2022):</strong> ${totalPop.toLocaleString()}
+      `)
+      .style("left", (event.pageX + 10) + "px")
+      .style("top", (event.pageY - 28) + "px");
     })
     .on("mousemove", (event) => {
       tooltip.style("left", (event.pageX + 10) + "px")
@@ -129,31 +130,48 @@ d3.csv(areaDatasetUrl).then(rawData => {
   // X Axis
   areaSvg.append("g")
     .attr("transform", `translate(0, ${areaHeight - areaMargin.top - areaMargin.bottom})`)
-    .call(d3.axisBottom(x).tickFormat(d3.format("d"))); // e.g. 1970, 1980, etc.
+    .call(d3.axisBottom(x).tickFormat(d3.format("d")));
 
   // Y Axis
   areaSvg.append("g")
     .call(d3.axisLeft(y));
 
-  // 9) Legend in the top-right corner
-  const legendX = areaWidth - areaMargin.right - 150;
+  // 9) Legend bounding box
+  const legendData = continents;
+  const legendX = areaWidth - areaMargin.right - 200;
   const legendY = 0;
+  const legendSpacing = 20;
+  const legendRectSize = 18;
+  const legendBoxWidth = 180;
+  const legendBoxHeight = legendData.length * legendSpacing + 20;
 
-  const legend = areaSvg.selectAll(".legend")
-    .data(continents)
+  // Group for the legend
+  const legendGroup = areaSvg.append("g")
+    .attr("class", "legend-group")
+    .attr("transform", `translate(${legendX}, ${legendY})`);
+
+  // Legend background
+  legendGroup.append("rect")
+    .attr("class", "legend-bg")
+    .attr("width", legendBoxWidth)
+    .attr("height", legendBoxHeight);
+
+  // Legend items
+  const legendItems = legendGroup.selectAll(".legend-item")
+    .data(legendData)
     .enter()
     .append("g")
-    .attr("class", "legend")
-    .attr("transform", (d, i) => `translate(${legendX}, ${legendY + i * 20})`);
+    .attr("class", "legend-item")
+    .attr("transform", (d, i) => `translate(10, ${i * legendSpacing + 10})`);
 
-  legend.append("rect")
-    .attr("width", 18)
-    .attr("height", 18)
+  legendItems.append("rect")
+    .attr("width", legendRectSize)
+    .attr("height", legendRectSize)
     .attr("fill", d => color(d));
 
-  legend.append("text")
-    .attr("x", 24)
-    .attr("y", 14)
+  legendItems.append("text")
+    .attr("x", legendRectSize + 8)
+    .attr("y", legendRectSize - 4)
     .style("font-size", "14px")
     .text(d => d);
 });
