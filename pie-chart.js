@@ -1,49 +1,52 @@
 const pieWidth = 600,
       pieHeight = 600,
-// Use a smaller radius so there's plenty of space below
+// Use a smaller radius so there's space at the bottom
       pieRadius = Math.min(pieWidth, pieHeight) / 2.8,
       innerRadius = pieRadius * 0.5;
 
-// Shift the donut upward to leave room for the legend
+// Shift the donut upward to leave room for the legend below
 const pieSvg = d3.select("#pie-chart")
   .append("g")
   .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2 - 60})`);
 
-// Replace with your CSV link
+// Replace this URL with your own CSV link or local path
 const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/06a25453f364af0081807aa5ce006a8287d49c37/world_population.csv";
 
 d3.csv(pieDatasetUrl).then(data => {
-  // 1) Sum 2022 population by Continent
+  // 1) Sum the 2022 Population by Continent
   const continentPop2022 = d3.rollup(
     data,
     v => d3.sum(v, d => +d["2022 Population"]),
     d => d.Continent.trim()
   );
 
-  // Convert to array
-  const pieDataArray = Array.from(continentPop2022, ([Continent, Population]) => ({ Continent, Population }));
+  // Convert rollup map to an array
+  const pieDataArray = Array.from(continentPop2022, ([Continent, Population]) => ({
+    Continent,
+    Population
+  }));
 
-  // 2) Create pie layout
+  // 2) Create the Pie Layout
   const pie = d3.pie().value(d => d.Population);
   const arcs = pie(pieDataArray);
 
-  // 3) Arc generator
+  // 3) Arc Generator (Donut)
   const arc = d3.arc()
     .innerRadius(innerRadius)
     .outerRadius(pieRadius);
 
-  // 4) Color scale
+  // 4) Color Scale (schemeSet3 for variety)
   const color = d3.scaleOrdinal()
     .domain(pieDataArray.map(d => d.Continent))
     .range(d3.schemeSet3);
 
-  // Shared tooltip
+  // Tooltip (shared by slices)
   const tooltip = d3.select("#tooltip");
 
   // Clear old elements
   pieSvg.selectAll("*").remove();
 
-  // 5) Draw donut slices
+  // 5) Draw Donut Slices
   pieSvg.selectAll("path")
     .data(arcs)
     .enter()
@@ -63,7 +66,7 @@ d3.csv(pieDatasetUrl).then(data => {
       .style("left", (event.pageX + 10) + "px")
       .style("top", (event.pageY - 28) + "px");
     })
-    .on("mousemove", (event) => {
+    .on("mousemove", event => {
       tooltip.style("left", (event.pageX + 10) + "px")
              .style("top", (event.pageY - 28) + "px");
     })
@@ -73,7 +76,7 @@ d3.csv(pieDatasetUrl).then(data => {
       tooltip.transition().duration(200).style("opacity", 0);
     });
 
-  // 6) Slice labels
+  // 6) Slice Labels (Continent Names)
   pieSvg.selectAll(".arc-label")
     .data(arcs)
     .enter()
@@ -82,17 +85,15 @@ d3.csv(pieDatasetUrl).then(data => {
     .attr("transform", d => `translate(${arc.centroid(d)})`)
     .text(d => d.data.Continent);
 
-  // 7) Legend below the donut
+  // 7) Legend (Reduced Size & Tighter Spacing)
   const legendData = pieDataArray;
-  const legendSpacing = 20;
-  const legendRectSize = 18;
+  const legendSpacing = 16;    // Less spacing between legend rows
+  const legendRectSize = 14;   // Smaller color squares
+  const legendBoxWidth = 100;  // Narrow bounding box
+  const legendBoxHeight = legendData.length * legendSpacing + 16;
 
-  // bounding box for legend
-  const legendBoxWidth = 150;
-  const legendBoxHeight = legendData.length * legendSpacing + 20;
-
-  // Place the legend's top-left corner below the donut
-  // We shift the legend down by (pieRadius + 30)
+  // Place the legend below the donut
+  // top-left corner at (-pieRadius, pieRadius+30)
   const legendGroup = pieSvg.append("g")
     .attr("transform", `translate(${-pieRadius}, ${pieRadius + 30})`);
 
@@ -108,7 +109,7 @@ d3.csv(pieDatasetUrl).then(data => {
     .enter()
     .append("g")
     .attr("class", "legend-item")
-    .attr("transform", (d, i) => `translate(10, ${i * legendSpacing + 10})`);
+    .attr("transform", (d, i) => `translate(8, ${i * legendSpacing + 8})`);
 
   legendItems.append("rect")
     .attr("width", legendRectSize)
@@ -116,8 +117,8 @@ d3.csv(pieDatasetUrl).then(data => {
     .attr("fill", d => color(d.Continent));
 
   legendItems.append("text")
-    .attr("x", legendRectSize + 8)
-    .attr("y", legendRectSize - 4)
-    .style("font-size", "14px")
+    .attr("x", legendRectSize + 6)
+    .attr("y", legendRectSize - 3)
+    .style("font-size", "12px")  // Smaller font
     .text(d => d.Continent);
 });
