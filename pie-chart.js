@@ -1,44 +1,49 @@
-const pieWidth = 550,
-      pieHeight = 550,
-      pieRadius = Math.min(pieWidth, pieHeight) / 2.2, // Slightly smaller radius
+const pieWidth = 600,
+      pieHeight = 600,
+// Use a smaller radius so there's plenty of space below
+      pieRadius = Math.min(pieWidth, pieHeight) / 2.8,
       innerRadius = pieRadius * 0.5;
 
+// Shift the donut upward to leave room for the legend
 const pieSvg = d3.select("#pie-chart")
   .append("g")
-  .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2 - 20})`); 
-// Shift up a bit so there's room for the legend below
+  .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2 - 60})`);
 
-// Example dataset link
+// Replace with your CSV link
 const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/06a25453f364af0081807aa5ce006a8287d49c37/world_population.csv";
 
 d3.csv(pieDatasetUrl).then(data => {
-  // Sum 2022 Population by Continent
+  // 1) Sum 2022 population by Continent
   const continentPop2022 = d3.rollup(
     data,
     v => d3.sum(v, d => +d["2022 Population"]),
     d => d.Continent.trim()
   );
 
+  // Convert to array
   const pieDataArray = Array.from(continentPop2022, ([Continent, Population]) => ({ Continent, Population }));
 
-  // Create pie layout
+  // 2) Create pie layout
   const pie = d3.pie().value(d => d.Population);
   const arcs = pie(pieDataArray);
 
-  // Arc generator
+  // 3) Arc generator
   const arc = d3.arc()
     .innerRadius(innerRadius)
     .outerRadius(pieRadius);
 
-  // Use d3.schemeSet3 for color variety
+  // 4) Color scale
   const color = d3.scaleOrdinal()
     .domain(pieDataArray.map(d => d.Continent))
     .range(d3.schemeSet3);
 
+  // Shared tooltip
   const tooltip = d3.select("#tooltip");
+
+  // Clear old elements
   pieSvg.selectAll("*").remove();
 
-  // Draw donut slices
+  // 5) Draw donut slices
   pieSvg.selectAll("path")
     .data(arcs)
     .enter()
@@ -46,7 +51,7 @@ d3.csv(pieDatasetUrl).then(data => {
     .attr("d", arc)
     .attr("fill", d => color(d.data.Continent))
     .attr("stroke", "#fff")
-    .style("stroke-width", "2px")
+    .style("stroke-width", 2)
     .on("mouseover", (event, d) => {
       d3.select(event.currentTarget).transition().duration(200)
         .attr("transform", "scale(1.05)");
@@ -58,7 +63,7 @@ d3.csv(pieDatasetUrl).then(data => {
       .style("left", (event.pageX + 10) + "px")
       .style("top", (event.pageY - 28) + "px");
     })
-    .on("mousemove", event => {
+    .on("mousemove", (event) => {
       tooltip.style("left", (event.pageX + 10) + "px")
              .style("top", (event.pageY - 28) + "px");
     })
@@ -68,7 +73,7 @@ d3.csv(pieDatasetUrl).then(data => {
       tooltip.transition().duration(200).style("opacity", 0);
     });
 
-  // Slice labels
+  // 6) Slice labels
   pieSvg.selectAll(".arc-label")
     .data(arcs)
     .enter()
@@ -77,21 +82,19 @@ d3.csv(pieDatasetUrl).then(data => {
     .attr("transform", d => `translate(${arc.centroid(d)})`)
     .text(d => d.data.Continent);
 
-  // Legend below the donut
+  // 7) Legend below the donut
   const legendData = pieDataArray;
   const legendSpacing = 20;
   const legendRectSize = 18;
 
-  // We'll place the legend so that the top-left corner is below the donut
-  // The donut is centered at (0,0) in this local coordinate system
-  // We'll shift the legend down by 'pieRadius + 30'
-  const legendGroup = pieSvg.append("g")
-    .attr("class", "legend-group")
-    .attr("transform", `translate(${-pieRadius}, ${pieRadius + 30})`);
-
-  // Calculate bounding box
-  const legendBoxWidth = 140;
+  // bounding box for legend
+  const legendBoxWidth = 150;
   const legendBoxHeight = legendData.length * legendSpacing + 20;
+
+  // Place the legend's top-left corner below the donut
+  // We shift the legend down by (pieRadius + 30)
+  const legendGroup = pieSvg.append("g")
+    .attr("transform", `translate(${-pieRadius}, ${pieRadius + 30})`);
 
   // Legend background
   legendGroup.append("rect")
