@@ -10,7 +10,7 @@ const pieSvg = d3.select("#pie-chart")
   .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
 
 // Replace with your raw GitHub Gist link OR local file path
-const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/026c349c96a9cdc0c9542ff31643432a119b2bbd/world_population.csv";
+const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/06a25453f364af0081807aa5ce006a8287d49c37/world_population.csv";
 
 d3.csv(pieDatasetUrl).then(data => {
   console.log("✅ Pie Chart Data Loaded:", data);

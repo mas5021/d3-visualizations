@@ -8,7 +8,7 @@ const areaSvg = d3.select("#area-chart")
   .attr("transform", `translate(${areaMargin.left},${areaMargin.top})`);
 
 // Replace with your raw GitHub Gist link OR local file path
-const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/026c349c96a9cdc0c9542ff31643432a119b2bbd/world_population.csv";
+const areaDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/06a25453f364af0081807aa5ce006a8287d49c37/world_population.csv";
 
 // Years we want to visualize (must match CSV column headers exactly)
 const years = ["1970 Population","1980 Population","1990 Population","2000 Population","2010 Population","2015 Population","2020 Population","2022 Population"];
