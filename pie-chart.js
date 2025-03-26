@@ -1,12 +1,13 @@
 const pieWidth = 600,
       pieHeight = 600,
-      pieRadius = Math.min(pieWidth, pieHeight) / 2.8,
+// Use an even smaller radius so there's more space below
+      pieRadius = Math.min(pieWidth, pieHeight) / 3.0,
       innerRadius = pieRadius * 0.5;
 
-// Shift donut upward for more space at the bottom
+// Shift the donut further upward to leave extra room below
 const pieSvg = d3.select("#pie-chart")
   .append("g")
-  .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2 - 60})`);
+  .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2 - 70})`);
 
 // Replace with your CSV link
 const pieDatasetUrl = "https://gist.githubusercontent.com/mas5021/c556004ae018d839bd2c6795ab6d624d/raw/06a25453f364af0081807aa5ce006a8287d49c37/world_population.csv";
@@ -19,6 +20,7 @@ d3.csv(pieDatasetUrl).then(data => {
     d => d.Continent.trim()
   );
 
+  // Convert to array
   const pieDataArray = Array.from(continentPop2022, ([Continent, Population]) => ({
     Continent,
     Population
@@ -33,12 +35,12 @@ d3.csv(pieDatasetUrl).then(data => {
     .innerRadius(innerRadius)
     .outerRadius(pieRadius);
 
-  // 4) Color scale
+  // 4) Color scale (schemeSet3)
   const color = d3.scaleOrdinal()
     .domain(pieDataArray.map(d => d.Continent))
     .range(d3.schemeSet3);
 
-  // Tooltip
+  // Shared tooltip
   const tooltip = d3.select("#tooltip");
 
   // Clear old elements
@@ -74,7 +76,7 @@ d3.csv(pieDatasetUrl).then(data => {
       tooltip.transition().duration(200).style("opacity", 0);
     });
 
-  // 6) Slice labels
+  // 6) Slice labels (Continent names)
   pieSvg.selectAll(".arc-label")
     .data(arcs)
     .enter()
@@ -83,16 +85,17 @@ d3.csv(pieDatasetUrl).then(data => {
     .attr("transform", d => `translate(${arc.centroid(d)})`)
     .text(d => d.data.Continent);
 
-  // 7) Legend (Reduced size, moved slightly up)
+  // 7) Legend below the donut (Reduced size, more space)
   const legendData = pieDataArray;
   const legendSpacing = 16;
   const legendRectSize = 14;
   const legendBoxWidth = 100;
   const legendBoxHeight = legendData.length * legendSpacing + 16;
 
-  // **Change from pieRadius + 30 to pieRadius + 20** to move legend up
+  // Place legend's top-left corner below the donut
+  // Shifting a bit more so it doesn't get cut off
   const legendGroup = pieSvg.append("g")
-    .attr("transform", `translate(${-pieRadius}, ${pieRadius + 20})`);
+    .attr("transform", `translate(${-pieRadius}, ${pieRadius + 10})`);
 
   // Legend background
   legendGroup.append("rect")
