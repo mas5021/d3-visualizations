@@ -82,4 +82,42 @@ d3.csv(pieDatasetUrl).then(data => {
     .enter()
     .append("text")
     .attr("class", "arc-label")
-    .attr("transform", d => `translate
+    .attr("transform", d => `translate(${arc.centroid(d)})`)
+    .text(d => d.data.Continent);
+
+  // 7) Draw the legend below the donut with reduced size and tighter spacing
+  const legendData = pieDataArray;
+  const legendSpacing = 16;
+  const legendRectSize = 14;
+  const legendBoxWidth = 100;
+  const legendBoxHeight = legendData.length * legendSpacing + 16;
+
+  // Position the legend below the donut; adjust Y-offset as needed
+  const legendGroup = pieSvg.append("g")
+    .attr("transform", `translate(${-pieRadius}, ${pieRadius + 10})`);
+
+  // Legend background bounding box
+  legendGroup.append("rect")
+    .attr("class", "legend-bg")
+    .attr("width", legendBoxWidth)
+    .attr("height", legendBoxHeight);
+
+  // Legend items
+  const legendItems = legendGroup.selectAll(".legend-item")
+    .data(legendData)
+    .enter()
+    .append("g")
+    .attr("class", "legend-item")
+    .attr("transform", (d, i) => `translate(8, ${i * legendSpacing + 8})`);
+
+  legendItems.append("rect")
+    .attr("width", legendRectSize)
+    .attr("height", legendRectSize)
+    .attr("fill", d => d3.rgb(color(d.Continent)).darker(1));
+
+  legendItems.append("text")
+    .attr("x", legendRectSize + 6)
+    .attr("y", legendRectSize - 3)
+    .style("font-size", "12px")
+    .text(d => d.Continent);
+});
